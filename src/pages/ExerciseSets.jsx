@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../db/index';
 import {
@@ -10,6 +10,7 @@ import {
   removeExerciseFromWorkout,
 } from '../db/actions';
 import ConfirmDialog from '../components/ConfirmDialog';
+import NumericKeypad from '../components/NumericKeypad';
 
 export default function ExerciseSets() {
   const { workoutExerciseId } = useParams();
@@ -19,8 +20,13 @@ export default function ExerciseSets() {
   const [ghostSets, setGhostSets] = useState([]);
   const [editingSet, setEditingSet] = useState(null);
   const [showRemove, setShowRemove] = useState(false);
-  const weightRef = useRef(null);
-  const repsRef = useRef(null);
+
+  // New set input values
+  const [newWeight, setNewWeight] = useState('');
+  const [newReps, setNewReps] = useState('');
+
+  // Keypad state: { target, value } where target is 'weight' | 'reps' | 'edit-weight' | 'edit-reps'
+  const [keypad, setKeypad] = useState(null);
 
   const loadData = useCallback(async () => {
     const we = await db.workout_exercises.get(workoutExerciseId);
@@ -37,26 +43,15 @@ export default function ExerciseSets() {
     loadData();
   }, [loadData]);
 
-  // Debug: log input attributes on mount to confirm PWA is serving latest code
-  useEffect(() => {
-    if (weightRef.current && repsRef.current) {
-      console.log('input attrs', {
-        weight: { type: weightRef.current.type, inputMode: weightRef.current.inputMode },
-        reps: { type: repsRef.current.type, inputMode: repsRef.current.inputMode },
-      });
-    }
-  }, []);
-
   async function handleLog() {
-    const weight = parseFloat(weightRef.current.value);
-    const reps = parseInt(repsRef.current.value, 10);
+    const weight = parseFloat(newWeight);
+    const reps = parseInt(newReps, 10);
     if (isNaN(weight) || isNaN(reps)) return;
 
     await logSet(workoutExerciseId, { reps, weight });
-    weightRef.current.value = '';
-    repsRef.current.value = '';
+    setNewWeight('');
+    setNewReps('');
     await loadData();
-    weightRef.current.focus();
   }
 
   async function handleEditSave(setId) {
@@ -74,14 +69,28 @@ export default function ExerciseSets() {
     navigate('/');
   }
 
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') handleLog();
+  function openKeypad(target, currentValue, allowDecimal) {
+    setKeypad({ target, value: String(currentValue || ''), allowDecimal });
   }
 
-  // Explicit focus trigger for Android standalone PWA keyboard
-  function handleInputTap(e) {
-    e.target.focus();
-    e.target.click();
+  function handleKeypadDone() {
+    if (!keypad) return;
+    const { target, value } = keypad;
+
+    if (target === 'weight') {
+      setNewWeight(value);
+    } else if (target === 'reps') {
+      setNewReps(value);
+    } else if (target === 'edit-weight' && editingSet) {
+      setEditingSet((p) => ({ ...p, weight: parseFloat(value) || 0 }));
+    } else if (target === 'edit-reps' && editingSet) {
+      setEditingSet((p) => ({ ...p, reps: parseInt(value, 10) || 0 }));
+    }
+    setKeypad(null);
+  }
+
+  function handleKeypadCancel() {
+    setKeypad(null);
   }
 
   // Ghost rows to show (only those beyond current sets)
@@ -120,34 +129,17 @@ export default function ExerciseSets() {
             <span className="set-num">{i + 1}</span>
             {editingSet?.id === s.id ? (
               <>
-                <div className="cell">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    value={editingSet.weight}
-                    onChange={(e) =>
-                      setEditingSet((p) => ({ ...p, weight: parseFloat(e.target.value) || 0 }))
-                    }
-                    onBlur={() => handleEditSave(s.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    onFocus={handleInputTap}
-                    autoFocus
-                  />
+                <div
+                  className="cell cell-input active"
+                  onClick={(e) => { e.stopPropagation(); openKeypad('edit-weight', editingSet.weight, true); }}
+                >
+                  {editingSet.weight || '0'}
                 </div>
-                <div className="cell">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={editingSet.reps}
-                    onChange={(e) =>
-                      setEditingSet((p) => ({ ...p, reps: parseInt(e.target.value, 10) || 0 }))
-                    }
-                    onBlur={() => handleEditSave(s.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    onFocus={handleInputTap}
-                  />
+                <div
+                  className="cell cell-input active"
+                  onClick={(e) => { e.stopPropagation(); openKeypad('edit-reps', editingSet.reps, false); }}
+                >
+                  {editingSet.reps || '0'}
                 </div>
               </>
             ) : (
@@ -179,30 +171,42 @@ export default function ExerciseSets() {
         )}
       </div>
 
-      {/* Bottom input row */}
+      {/* Bottom input row — tap to open keypad */}
       <div className="input-row">
-        <input
-          ref={weightRef}
-          type="text"
-          inputMode="decimal"
-          pattern="[0-9]*\.?[0-9]*"
-          placeholder="Weight (lb)"
-          onKeyDown={handleKeyDown}
-          onFocus={handleInputTap}
-        />
-        <input
-          ref={repsRef}
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          placeholder="Reps"
-          onKeyDown={handleKeyDown}
-          onFocus={handleInputTap}
-        />
+        <div
+          className={`input-cell${newWeight ? '' : ' placeholder'}`}
+          onClick={() => openKeypad('weight', newWeight, true)}
+        >
+          {newWeight || 'WEIGHT (LB)'}
+        </div>
+        <div
+          className={`input-cell${newReps ? '' : ' placeholder'}`}
+          onClick={() => openKeypad('reps', newReps, false)}
+        >
+          {newReps || 'REPS'}
+        </div>
         <button className="log-btn" onClick={handleLog}>
           +
         </button>
       </div>
+
+      {/* Save edits when tapping away from an editing row */}
+      {editingSet && !keypad && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 5 }}
+          onClick={() => handleEditSave(editingSet.id)}
+        />
+      )}
+
+      {keypad && (
+        <NumericKeypad
+          value={keypad.value}
+          allowDecimal={keypad.allowDecimal}
+          onChange={(v) => setKeypad((p) => ({ ...p, value: v }))}
+          onDone={handleKeypadDone}
+          onCancel={handleKeypadCancel}
+        />
+      )}
 
       <ConfirmDialog
         open={showRemove}

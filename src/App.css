@@ -285,27 +285,11 @@ body {
   border-right: none;
 }
 
-.set-row input {
-  background: transparent;
-  border: none;
-  color: var(--white);
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-  width: 100%;
-  padding: 12px 8px;
-  font-variant-numeric: tabular-nums;
-  font-family: inherit;
-  -webkit-user-select: text;
-  user-select: text;
+.set-row .cell-input {
+  cursor: pointer;
 }
 
-.set-row input::placeholder {
-  color: var(--gray-4);
-}
-
-.set-row input:focus {
-  outline: none;
+.set-row .cell-input.active {
   background: var(--gray-3);
 }
 
@@ -324,9 +308,10 @@ body {
   margin: 0 auto;
 }
 
-.input-row input {
-  background: transparent;
-  border: none;
+.input-row .input-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-right: 1px solid var(--border);
   color: var(--white);
   font-size: 18px;
@@ -336,13 +321,10 @@ body {
   font-variant-numeric: tabular-nums;
   font-family: inherit;
   min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  -webkit-user-select: text;
-  user-select: text;
+  cursor: pointer;
 }
 
-.input-row input::placeholder {
+.input-row .input-cell.placeholder {
   color: var(--gray-4);
   font-size: 11px;
   font-weight: 700;
@@ -350,8 +332,7 @@ body {
   text-transform: uppercase;
 }
 
-.input-row input:focus {
-  outline: none;
+.input-row .input-cell:active {
   background: var(--gray-2);
 }
 
@@ -566,4 +547,97 @@ body {
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--gray-5);
+}
+
+/* ── Numeric Keypad ── */
+.keypad-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.keypad {
+  width: 100%;
+  max-width: 420px;
+  background: var(--gray-1);
+  border-top: 2px solid var(--white);
+}
+
+.keypad-display {
+  padding: 16px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.keypad-value {
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.keypad-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
+  font-size: 22px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--white);
+  background: var(--gray-1);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.keypad-key:nth-child(3n) {
+  border-right: none;
+}
+
+.keypad-key:active {
+  background: var(--gray-3);
+}
+
+.keypad-key-fn {
+  font-size: 20px;
+}
+
+.keypad-key-disabled {
+  color: var(--gray-4);
+  cursor: default;
+}
+
+.keypad-key-disabled:active {
+  background: var(--gray-1);
+}
+
+.keypad-done {
+  width: 100%;
+  padding: 16px 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--white);
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.keypad-done:active {
+  background: var(--gray-6);
 }
