@@ -1,0 +1,560 @@
+/* ── Monochrome gym logger ── */
+/* Inspired by Dieter Rams + Roland TR-808 */
+/* Must be legible on a 1-bit monochrome display */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --black: #000;
+  --white: #fff;
+  --gray-1: #111;
+  --gray-2: #1a1a1a;
+  --gray-3: #2a2a2a;
+  --gray-4: #444;
+  --gray-5: #888;
+  --gray-6: #ccc;
+  --border: #333;
+  --border-light: #555;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--black);
+  color: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  border-inline: 1px solid var(--border);
+}
+
+@media (max-width: 420px) {
+  .app {
+    border-inline: none;
+  }
+}
+
+/* ── Top bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--white);
+  background: var(--black);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.top-bar h1 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.top-bar button {
+  background: none;
+  border: 1px solid var(--white);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 6px 12px;
+}
+
+.top-bar button:active {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* ── Back button ── */
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px 0 0;
+  line-height: 1;
+}
+
+/* ── Page content ── */
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Exercise card on Today's Workout ── */
+.exercise-card {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.exercise-card:active {
+  background: var(--gray-2);
+}
+
+.exercise-card .name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.exercise-card .meta {
+  font-size: 11px;
+  color: var(--gray-5);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.exercise-card .arrow {
+  font-size: 18px;
+  color: var(--gray-5);
+}
+
+/* ── Muscle group tag ── */
+.tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--border-light);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gray-6);
+}
+
+/* ── Add exercise area ── */
+.add-exercise-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+
+.add-exercise-area.empty {
+}
+
+.add-exercise-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.add-exercise-btn .plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--white);
+  color: var(--white);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.add-exercise-btn:active .plus {
+  background: var(--white);
+  color: var(--black);
+}
+
+.add-exercise-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--gray-4);
+  letter-spacing: 0.3px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 2px solid var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--black);
+  color: var(--white);
+}
+
+.btn:active {
+  background: var(--white);
+  color: var(--black);
+}
+
+.btn-fill {
+  background: var(--white);
+  color: var(--black);
+}
+
+.btn-fill:active {
+  background: var(--gray-6);
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* ── Set logging grid ── */
+.sets-container {
+  flex: 1;
+  padding: 0;
+}
+
+.set-header {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr;
+  border-bottom: 2px solid var(--white);
+  background: var(--gray-2);
+}
+
+.set-header span {
+  padding: 10px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--gray-6);
+}
+
+.set-header span:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-row.logged {
+  background: var(--gray-2);
+}
+
+.set-row .set-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-5);
+  border-right: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.set-row .cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border);
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-row .cell:last-child {
+  border-right: none;
+}
+
+.set-row input {
+  background: transparent;
+  border: none;
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+  padding: 12px 8px;
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+}
+
+.set-row input::placeholder {
+  color: var(--gray-4);
+}
+
+.set-row input:focus {
+  outline: none;
+  background: var(--gray-3);
+}
+
+/* ── Input row for new set ── */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 56px;
+  border-top: 2px solid var(--white);
+  background: var(--gray-3);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.input-row input {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding: 16px 8px;
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.input-row input::placeholder {
+  color: var(--gray-4);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.input-row input:focus {
+  outline: none;
+  background: var(--gray-2);
+}
+
+.input-row .log-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border: none;
+  color: var(--black);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.input-row .log-btn:active {
+  background: var(--gray-6);
+}
+
+/* ── Search bar ── */
+.search-bar {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--black);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--white);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.search-bar:focus {
+  outline: none;
+  background: var(--gray-2);
+}
+
+.search-bar::placeholder {
+  color: var(--gray-5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+}
+
+/* ── Workout name input ── */
+.workout-name {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  width: 100%;
+  padding: 0;
+  font-family: inherit;
+}
+
+.workout-name:focus {
+  outline: none;
+}
+
+.workout-name::placeholder {
+  color: var(--gray-5);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--gray-5);
+}
+
+.empty-state h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Bottom navigation ── */
+.bottom-nav {
+  display: flex;
+  border-top: 2px solid var(--white);
+  background: var(--black);
+  margin-top: auto;
+}
+
+.bottom-nav a {
+  flex: 1;
+  text-align: center;
+  padding: 14px 0;
+  color: var(--white);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-right: 1px solid var(--border);
+  background: var(--gray-2);
+}
+
+.bottom-nav a:last-child {
+  border-right: none;
+}
+
+.bottom-nav a.active {
+  color: var(--gray-4);
+  background: var(--black);
+}
+
+/* ── Confirm dialog ── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.dialog {
+  background: var(--gray-2);
+  border: 2px solid var(--white);
+  max-width: 320px;
+  width: 100%;
+  padding: 24px;
+}
+
+.dialog-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.dialog-message {
+  font-size: 13px;
+  color: var(--gray-6);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dialog-actions .btn {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 11px;
+}
+
+/* ── Delete button (trash icon) ── */
+.delete-btn {
+  background: none;
+  border: 1px solid var(--border-light);
+  color: var(--gray-5);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.delete-btn:active {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* ── History entry with delete ── */
+.history-entry {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-entry .exercise-card {
+  flex: 1;
+  border-bottom: none;
+}
+
+.history-entry .delete-btn {
+  margin-right: 12px;
+}
+
+/* ── Duration / detail meta ── */
+.detail-meta {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--gray-5);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ── Weight unit label ── */
+.unit-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gray-5);
+}
