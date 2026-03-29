@@ -37,6 +37,16 @@ export default function ExerciseSets() {
     loadData();
   }, [loadData]);
 
+  // Debug: log input attributes on mount to confirm PWA is serving latest code
+  useEffect(() => {
+    if (weightRef.current && repsRef.current) {
+      console.log('input attrs', {
+        weight: { type: weightRef.current.type, inputMode: weightRef.current.inputMode },
+        reps: { type: repsRef.current.type, inputMode: repsRef.current.inputMode },
+      });
+    }
+  }, []);
+
   async function handleLog() {
     const weight = parseFloat(weightRef.current.value);
     const reps = parseInt(repsRef.current.value, 10);
