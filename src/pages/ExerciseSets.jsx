@@ -43,15 +43,22 @@ export default function ExerciseSets() {
     loadData();
   }, [loadData]);
 
-  async function handleLog() {
-    const weight = parseFloat(newWeight);
-    const reps = parseInt(newReps, 10);
+  async function saveSet(weightStr, repsStr) {
+    const weight = parseFloat(weightStr);
+    const reps = parseInt(repsStr, 10);
     if (isNaN(weight) || isNaN(reps)) return;
-
     await logSet(workoutExerciseId, { reps, weight });
     setNewWeight('');
     setNewReps('');
     await loadData();
+  }
+
+  // "+" button: accept ghost data as-is, or save if both fields filled
+  async function handleQuickLog() {
+    const ghost = ghostSets[sets.length];
+    const w = newWeight || (ghost ? String(ghost.weight) : '');
+    const r = newReps || (ghost ? String(ghost.reps) : '');
+    await saveSet(w, r);
   }
 
   async function handleEditSave(setId) {
@@ -73,7 +80,7 @@ export default function ExerciseSets() {
     setKeypad({ target, value: String(currentValue || ''), allowDecimal });
   }
 
-  function handleKeypadDone() {
+  async function handleKeypadDone() {
     if (!keypad) return;
     const { target, value } = keypad;
 
@@ -83,7 +90,14 @@ export default function ExerciseSets() {
       setKeypad({ target: 'reps', value: newReps || '', allowDecimal: false });
       return;
     } else if (target === 'reps') {
-      setNewReps(value);
+      setKeypad(null);
+      // Auto-save if both weight and reps are filled
+      if (newWeight && value) {
+        await saveSet(newWeight, value);
+      } else {
+        setNewReps(value);
+      }
+      return;
     } else if (target === 'edit-weight' && editingSet) {
       setEditingSet((p) => ({ ...p, weight: parseFloat(value) || 0 }));
     } else if (target === 'edit-reps' && editingSet) {
@@ -96,8 +110,11 @@ export default function ExerciseSets() {
     setKeypad(null);
   }
 
-  // Ghost rows to show (only those beyond current sets)
-  const ghostExtras = ghostSets.slice(sets.length);
+  // Ghost data for the set currently being filled
+  const ghostCurrent = ghostSets[sets.length];
+  // Ghost rows to show (skip current set's ghost since it's in the input bar)
+  const ghostExtras = ghostSets.slice(sets.length + 1);
+  const nextSetNum = sets.length + 1;
 
   return (
     <div className="page">
@@ -167,7 +184,7 @@ export default function ExerciseSets() {
           </div>
         ))}
 
-        {sets.length === 0 && ghostExtras.length === 0 && (
+        {sets.length === 0 && !ghostCurrent && ghostExtras.length === 0 && (
           <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--gray-5)', fontSize: 13 }}>
             First time. Log your first set below.
           </div>
@@ -176,19 +193,20 @@ export default function ExerciseSets() {
 
       {/* Bottom input row — tap to open keypad */}
       <div className="input-row">
+        <div className="set-indicator">Set {nextSetNum}</div>
         <div
-          className={`input-cell${newWeight ? '' : ' placeholder'}${keypad?.target === 'weight' ? ' active' : ''}`}
+          className={`input-cell${newWeight ? '' : ghostCurrent ? ' ghost' : ' placeholder'}${keypad?.target === 'weight' ? ' active' : ''}`}
           onClick={() => openKeypad('weight', newWeight, true)}
         >
-          {newWeight || 'WEIGHT (LB)'}
+          {newWeight || (ghostCurrent ? String(ghostCurrent.weight) : 'WEIGHT')}
         </div>
         <div
-          className={`input-cell${newReps ? '' : ' placeholder'}${keypad?.target === 'reps' ? ' active' : ''}`}
+          className={`input-cell${newReps ? '' : ghostCurrent ? ' ghost' : ' placeholder'}${keypad?.target === 'reps' ? ' active' : ''}`}
           onClick={() => openKeypad('reps', newReps, false)}
         >
-          {newReps || 'REPS'}
+          {newReps || (ghostCurrent ? String(ghostCurrent.reps) : 'REPS')}
         </div>
-        <button className="log-btn" onClick={handleLog}>
+        <button className="log-btn" onClick={handleQuickLog}>
           +
         </button>
       </div>
