@@ -108,6 +108,7 @@ export default function ExerciseSets() {
                   <input
                     type="number"
                     inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     value={editingSet.weight}
                     onChange={(e) =>
                       setEditingSet((p) => ({ ...p, weight: parseFloat(e.target.value) || 0 }))
@@ -121,6 +122,7 @@ export default function ExerciseSets() {
                   <input
                     type="number"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     value={editingSet.reps}
                     onChange={(e) =>
                       setEditingSet((p) => ({ ...p, reps: parseInt(e.target.value, 10) || 0 }))
@@ -165,6 +167,7 @@ export default function ExerciseSets() {
           ref={weightRef}
           type="number"
           inputMode="decimal"
+          pattern="[0-9]*\.?[0-9]*"
           placeholder="Weight (lb)"
           onKeyDown={handleKeyDown}
         />
@@ -172,6 +175,7 @@ export default function ExerciseSets() {
           ref={repsRef}
           type="number"
           inputMode="numeric"
+          pattern="[0-9]*"
           placeholder="Reps"
           onKeyDown={handleKeyDown}
         />
