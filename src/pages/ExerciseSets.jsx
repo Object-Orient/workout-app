@@ -6,7 +6,6 @@ import {
   getSetsForWorkoutExercise,
   getLastSessionSets,
   logSet,
-  updateSet,
   removeExerciseFromWorkout,
 } from '../db/actions';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -18,14 +17,14 @@ export default function ExerciseSets() {
   const [exercise, setExercise] = useState(null);
   const [sets, setSets] = useState([]);
   const [ghostSets, setGhostSets] = useState([]);
-  const [editingSet, setEditingSet] = useState(null);
   const [showRemove, setShowRemove] = useState(false);
+  const [displayUnit, setDisplayUnit] = useState('lb');
 
   // New set input values
   const [newWeight, setNewWeight] = useState('');
   const [newReps, setNewReps] = useState('');
 
-  // Keypad state: { target, value } where target is 'weight' | 'reps' | 'edit-weight' | 'edit-reps'
+  // Keypad state: { target, value } where target is 'weight' | 'reps'
   const [keypad, setKeypad] = useState(null);
 
   const loadData = useCallback(async () => {
@@ -36,6 +35,7 @@ export default function ExerciseSets() {
     const currentSets = await getSetsForWorkoutExercise(workoutExerciseId);
     setSets(currentSets);
     const lastSets = await getLastSessionSets(we.exercise_id);
+    console.log('[ghost] getLastSessionSets result:', lastSets);
     setGhostSets(lastSets);
   }, [workoutExerciseId]);
 
@@ -55,20 +55,10 @@ export default function ExerciseSets() {
 
   // "+" button: accept ghost data as-is, or save if both fields filled
   async function handleQuickLog() {
-    const ghost = ghostSets[sets.length];
+    const ghost = ghostCurrent;
     const w = newWeight || (ghost ? String(ghost.weight) : '');
     const r = newReps || (ghost ? String(ghost.reps) : '');
     await saveSet(w, r);
-  }
-
-  async function handleEditSave(setId) {
-    if (!editingSet) return;
-    await updateSet(setId, {
-      weight: editingSet.weight,
-      reps: editingSet.reps,
-    });
-    setEditingSet(null);
-    await loadData();
   }
 
   async function handleRemove() {
@@ -98,10 +88,6 @@ export default function ExerciseSets() {
         setNewReps(value);
       }
       return;
-    } else if (target === 'edit-weight' && editingSet) {
-      setEditingSet((p) => ({ ...p, weight: parseFloat(value) || 0 }));
-    } else if (target === 'edit-reps' && editingSet) {
-      setEditingSet((p) => ({ ...p, reps: parseInt(value, 10) || 0 }));
     }
     setKeypad(null);
   }
@@ -110,8 +96,20 @@ export default function ExerciseSets() {
     setKeypad(null);
   }
 
-  // Ghost data for the set currently being filled
-  const ghostCurrent = ghostSets[sets.length];
+  // Unit conversion (display only)
+  function convertWeight(weight, fromUnit) {
+    const from = fromUnit || 'lb';
+    if (displayUnit === from) return weight;
+    if (displayUnit === 'kg') return Math.round((weight / 2.2046) * 10) / 10;
+    return Math.round((weight * 2.2046) * 10) / 10;
+  }
+
+  function toggleUnit() {
+    setDisplayUnit((u) => (u === 'lb' ? 'kg' : 'lb'));
+  }
+
+  // Ghost data: previous session first, fall back to last logged set in current session
+  const ghostCurrent = ghostSets[sets.length] || (sets.length > 0 ? sets[sets.length - 1] : null);
   // Ghost rows to show (skip current set's ghost since it's in the input bar)
   const ghostExtras = ghostSets.slice(sets.length + 1);
   const nextSetNum = sets.length + 1;
@@ -137,48 +135,21 @@ export default function ExerciseSets() {
         </div>
 
         {sets.map((s, i) => (
-          <div
-            key={s.id}
-            className="set-row logged"
-            onClick={() =>
-              setEditingSet(
-                editingSet?.id === s.id ? null : { id: s.id, weight: s.weight, reps: s.reps }
-              )
-            }
-          >
+          <div key={s.id} className="set-row logged">
             <span className="set-num">{i + 1}</span>
-            {editingSet?.id === s.id ? (
-              <>
-                <div
-                  className="cell cell-input active"
-                  onClick={(e) => { e.stopPropagation(); openKeypad('edit-weight', editingSet.weight, true); }}
-                >
-                  {editingSet.weight || '0'}
-                </div>
-                <div
-                  className="cell cell-input active"
-                  onClick={(e) => { e.stopPropagation(); openKeypad('edit-reps', editingSet.reps, false); }}
-                >
-                  {editingSet.reps || '0'}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="cell">
-                  {s.weight} <span className="unit-label">{s.weight_unit || 'lb'}</span>
-                </div>
-                <div className="cell">{s.reps}</div>
-              </>
-            )}
+            <div className="cell cell-weight" onClick={toggleUnit}>
+              {convertWeight(s.weight, s.weight_unit)} <span className="unit-label">{displayUnit}</span>
+            </div>
+            <div className="cell">{s.reps}</div>
           </div>
         ))}
 
         {/* Ghost rows from last session */}
         {ghostExtras.map((g, i) => (
           <div key={`ghost-${i}`} className="set-row" style={{ opacity: 0.25 }}>
-            <span className="set-num">{sets.length + i + 1}</span>
+            <span className="set-num">{sets.length + i + 2}</span>
             <div className="cell">
-              {g.weight} <span className="unit-label">{g.weight_unit || 'lb'}</span>
+              {convertWeight(g.weight, g.weight_unit)} <span className="unit-label">{displayUnit}</span>
             </div>
             <div className="cell">{g.reps}</div>
           </div>
@@ -198,7 +169,7 @@ export default function ExerciseSets() {
           className={`input-cell${newWeight ? '' : ghostCurrent ? ' ghost' : ' placeholder'}${keypad?.target === 'weight' ? ' active' : ''}`}
           onClick={() => openKeypad('weight', newWeight, true)}
         >
-          {newWeight || (ghostCurrent ? String(ghostCurrent.weight) : 'WEIGHT')}
+          {newWeight || (ghostCurrent ? `${ghostCurrent.weight} ${ghostCurrent.weight_unit || 'lb'}` : 'WEIGHT')}
         </div>
         <div
           className={`input-cell${newReps ? '' : ghostCurrent ? ' ghost' : ' placeholder'}${keypad?.target === 'reps' ? ' active' : ''}`}
@@ -211,19 +182,11 @@ export default function ExerciseSets() {
         </button>
       </div>
 
-      {/* Save edits when tapping away from an editing row */}
-      {editingSet && !keypad && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 5 }}
-          onClick={() => handleEditSave(editingSet.id)}
-        />
-      )}
-
       {keypad && (
         <NumericKeypad
           value={keypad.value}
           allowDecimal={keypad.allowDecimal}
-          label={keypad.target === 'weight' || keypad.target === 'edit-weight' ? 'Weight' : 'Reps'}
+          label={keypad.target === 'weight' ? 'Weight' : 'Reps'}
           onChange={(v) => setKeypad((p) => ({ ...p, value: v }))}
           onDone={handleKeypadDone}
           onCancel={handleKeypadCancel}

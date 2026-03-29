@@ -286,6 +286,7 @@ body {
 
 .set-row.logged {
   background: var(--gray-2);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .set-row .set-num {
@@ -314,12 +315,9 @@ body {
   border-right: none;
 }
 
-.set-row .cell-input {
+.set-row .cell-weight {
   cursor: pointer;
-}
-
-.set-row .cell-input.active {
-  background: var(--gray-3);
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Input row for new set ── */
