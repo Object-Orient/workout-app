@@ -225,6 +225,7 @@ body {
 .sets-container {
   flex: 1;
   padding: 0;
+  padding-bottom: 64px; /* space for fixed input-row */
 }
 
 .set-header {
@@ -314,11 +315,13 @@ body {
   grid-template-columns: 1fr 1fr 56px;
   border-top: 2px solid var(--white);
   background: var(--gray-3);
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
-  max-width: 100%;
-  overflow: hidden;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .input-row input {
@@ -333,6 +336,8 @@ body {
   font-variant-numeric: tabular-nums;
   font-family: inherit;
   min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   -webkit-user-select: text;
   user-select: text;
 }
