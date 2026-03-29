@@ -20,7 +20,7 @@ function NavBar() {
       <Link to="/history" className={location.pathname.startsWith('/history') ? 'active' : ''}>
         History
       </Link>
-      <span style={{ position: 'absolute', bottom: 2, right: 6, fontSize: 9, color: '#333', pointerEvents: 'none' }}>v1.0.7</span>
+      <span style={{ position: 'absolute', bottom: 2, right: 6, fontSize: 9, color: '#333', pointerEvents: 'none' }}>v1.0.8</span>
     </nav>
   );
 }

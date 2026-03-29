@@ -1,4 +1,10 @@
 /* Reset — App.css handles all app styles */
+
+:root {
+  --bar-height: 56px;
+  --bar-padding: 0 16px;
+}
+
 body {
   margin: 0;
 }

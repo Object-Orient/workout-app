@@ -14,8 +14,6 @@ html, body, #root {
 }
 
 :root {
-  --top-bar-h: 49px;
-  --nav-h: 43px;
   --black: #000;
   --white: #fff;
   --gray-1: #111;
@@ -57,7 +55,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  height: var(--bar-height);
+  padding: var(--bar-padding);
   border-bottom: 2px solid var(--white);
   background: var(--black);
   position: fixed;
@@ -110,7 +109,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: var(--top-bar-h);
+  padding-top: var(--bar-height);
   min-height: 0;
 }
 
@@ -123,7 +122,7 @@ body {
 }
 
 .page-scroll.has-nav {
-  padding-bottom: var(--nav-h);
+  padding-bottom: var(--bar-height);
 }
 
 /* ── Exercise card on Today's Workout ── */
@@ -255,7 +254,7 @@ body {
   -webkit-overflow-scrolling: touch;
   min-height: 0;
   padding: 0;
-  padding-bottom: 64px; /* space for fixed input-row */
+  padding-bottom: var(--bar-height); /* space for fixed input-row */
 }
 
 .set-header {
@@ -327,6 +326,7 @@ body {
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr 56px;
+  height: var(--bar-height);
   border-top: 2px solid var(--white);
   background: var(--gray-3);
   position: fixed;
@@ -347,7 +347,7 @@ body {
   font-size: 18px;
   font-weight: 600;
   text-align: center;
-  padding: 16px 8px;
+  padding: 0 8px;
   font-variant-numeric: tabular-nums;
   font-family: inherit;
   min-width: 0;
@@ -452,6 +452,8 @@ body {
 /* ── Bottom navigation ── */
 .bottom-nav {
   display: flex;
+  align-items: center;
+  height: var(--bar-height);
   border-top: 2px solid var(--white);
   background: var(--black);
   position: fixed;
@@ -465,8 +467,10 @@ body {
 
 .bottom-nav a {
   flex: 1;
-  text-align: center;
-  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   color: var(--white);
   text-decoration: none;
   font-size: 11px;
