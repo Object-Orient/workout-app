@@ -90,16 +90,18 @@ export default function TodayWorkout() {
         <div className="top-bar">
           <h1>Workout</h1>
         </div>
-        <div className="empty-state">
-          <h2>No Active Workout</h2>
-          <p>Start a new session to begin logging.</p>
-          <button
-            className="btn btn-fill"
-            style={{ marginTop: 24 }}
-            onClick={handleStartWorkout}
-          >
-            Start Workout
-          </button>
+        <div className="page-scroll has-nav">
+          <div className="empty-state">
+            <h2>No Active Workout</h2>
+            <p>Start a new session to begin logging.</p>
+            <button
+              className="btn btn-fill"
+              style={{ marginTop: 24 }}
+              onClick={handleStartWorkout}
+            >
+              Start Workout
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -117,7 +119,7 @@ export default function TodayWorkout() {
         <button onClick={handleFinishWorkout}>Finish</button>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className="page-scroll has-nav">
         {exercises.map((we) => (
           <div
             key={we.id}

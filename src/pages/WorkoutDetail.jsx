@@ -49,47 +49,49 @@ export default function WorkoutDetail() {
         </button>
       </div>
 
-      <div className="detail-meta">
-        <span>
-          {new Date(workout.started_at).toLocaleDateString(undefined, {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </span>
-        {workout.completed_at && (
-          <span>{formatDuration(workout.started_at, workout.completed_at)}</span>
+      <div className="page-scroll">
+        <div className="detail-meta">
+          <span>
+            {new Date(workout.started_at).toLocaleDateString(undefined, {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </span>
+          {workout.completed_at && (
+            <span>{formatDuration(workout.started_at, workout.completed_at)}</span>
+          )}
+        </div>
+
+        {workout.exercises.length === 0 ? (
+          <div className="empty-state">
+            <p>No exercises in this workout.</p>
+          </div>
+        ) : (
+          workout.exercises.map((we) => (
+            <div key={we.id}>
+              <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', background: 'var(--gray-2)' }}>
+                {we.exercise?.name}
+              </div>
+              <div className="set-header">
+                <span>Set</span>
+                <span>Weight</span>
+                <span>Reps</span>
+              </div>
+              {we.sets.map((s, i) => (
+                <div key={s.id} className="set-row">
+                  <span className="set-num">{i + 1}</span>
+                  <div className="cell">
+                    {s.weight} <span className="unit-label">{s.weight_unit || 'lb'}</span>
+                  </div>
+                  <div className="cell">{s.reps}</div>
+                </div>
+              ))}
+            </div>
+          ))
         )}
       </div>
-
-      {workout.exercises.length === 0 ? (
-        <div className="empty-state">
-          <p>No exercises in this workout.</p>
-        </div>
-      ) : (
-        workout.exercises.map((we) => (
-          <div key={we.id}>
-            <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 14, letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', background: 'var(--gray-2)' }}>
-              {we.exercise?.name}
-            </div>
-            <div className="set-header">
-              <span>Set</span>
-              <span>Weight</span>
-              <span>Reps</span>
-            </div>
-            {we.sets.map((s, i) => (
-              <div key={s.id} className="set-row">
-                <span className="set-num">{i + 1}</span>
-                <div className="cell">
-                  {s.weight} <span className="unit-label">{s.weight_unit || 'lb'}</span>
-                </div>
-                <div className="cell">{s.reps}</div>
-              </div>
-            ))}
-          </div>
-        ))
-      )}
 
       <ConfirmDialog
         open={showDelete}

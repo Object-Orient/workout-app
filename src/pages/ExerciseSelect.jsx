@@ -37,29 +37,31 @@ export default function ExerciseSelect() {
         <div style={{ width: 32 }} />
       </div>
 
-      <input
-        className="search-bar"
-        placeholder="Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        autoFocus
-      />
+      <div className="page-scroll">
+        <input
+          className="search-bar"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+        />
 
-      {filtered.map((ex) => (
-        <div key={ex.id} className="exercise-card" onClick={() => handleSelect(ex.id)}>
-          <div>
-            <div className="name">{ex.name}</div>
-            <div className="meta">{ex.equipment} &middot; {ex.muscle_group}</div>
+        {filtered.map((ex) => (
+          <div key={ex.id} className="exercise-card" onClick={() => handleSelect(ex.id)}>
+            <div>
+              <div className="name">{ex.name}</div>
+              <div className="meta">{ex.equipment} &middot; {ex.muscle_group}</div>
+            </div>
+            <span className="tag">{ex.muscle_group}</span>
           </div>
-          <span className="tag">{ex.muscle_group}</span>
-        </div>
-      ))}
+        ))}
 
-      {filtered.length === 0 && (
-        <div className="empty-state">
-          <p>No match for "{search}"</p>
-        </div>
-      )}
+        {filtered.length === 0 && (
+          <div className="empty-state">
+            <p>No match for "{search}"</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
