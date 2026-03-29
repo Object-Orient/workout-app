@@ -1,5 +1,5 @@
 import { readdirSync, statSync, writeFileSync } from 'fs';
-import { join, posix } from 'path';
+import { join } from 'path';
 
 const DIST = 'dist';
 const SW_PATH = join(DIST, 'sw.js');
@@ -27,11 +27,12 @@ const CACHE_NAME = '${cacheVersion}';
 
 const PRECACHE_URLS = ${JSON.stringify(files, null, 2)};
 
+// Do NOT call skipWaiting automatically — let the client control activation
+// so the user sees the "Update available" prompt before the page reloads.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -43,6 +44,13 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Listen for skip-waiting message from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -50,25 +58,16 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) {
-          // Return cached, but update in background
-          fetch(request).then((response) => {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, response));
-          }).catch(() => {});
-          return cached;
-        }
-        return fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        }).catch(() => caches.match('/index.html'));
-      })
+      fetch(request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        return response;
+      }).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // Static assets (hashed filenames = immutable): cache-first
+  // Static assets: cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;

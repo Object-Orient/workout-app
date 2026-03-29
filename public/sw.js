@@ -1,6 +1,5 @@
-const CACHE_NAME = 'workout-v1';
+const CACHE_NAME = 'workout-dev';
 
-// On install, cache the app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -13,10 +12,8 @@ self.addEventListener('install', (event) => {
       ]);
     })
   );
-  self.skipWaiting();
 });
 
-// On activate, clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -26,15 +23,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first for same-origin requests, network-first for navigations
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-
-  // Skip non-GET and cross-origin
   if (request.method !== 'GET') return;
   if (!request.url.startsWith(self.location.origin)) return;
 
-  // Navigation requests: network-first (so app updates are picked up)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -48,7 +47,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
