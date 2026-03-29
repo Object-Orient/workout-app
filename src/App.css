@@ -292,19 +292,28 @@ body {
   right: 0;
   bottom: 0;
   width: 72px;
-  background: #e53935;
+  background: #1a1a1a;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  overflow: hidden;
+}
+
+.swipe-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f0f0f0;
   font-size: 24px;
   font-weight: 700;
-  cursor: pointer;
+  transform: translateX(72px);
+  will-change: transform;
 }
 
 .swipe-content {
   position: relative;
   z-index: 1;
+  background: var(--black);
   will-change: transform;
 }
 

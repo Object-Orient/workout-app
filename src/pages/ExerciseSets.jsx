@@ -12,38 +12,74 @@ import {
 import ConfirmDialog from '../components/ConfirmDialog';
 import NumericKeypad from '../components/NumericKeypad';
 
-const REVEAL_WIDTH = 72;
 const SNAP_THRESHOLD = 0.4;
-const DELETE_THRESHOLD = 0.75;
 const RESISTANCE_START = 0.6;
+const ICON_MULTIPLIER = 1.8;
+const SNAP_BACK = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+const FLY_OFF = 'transform 0.15s ease-in';
 
 function SwipeableSetRow({ children, onDelete, setId, openSetId, setOpenSetId }) {
   const containerRef = useRef(null);
   const contentRef = useRef(null);
+  const iconRef = useRef(null);
   const startX = useRef(0);
   const startY = useRef(0);
   const startOffset = useRef(0);
   const currentOffset = useRef(0);
   const direction = useRef(null);
   const rowWidth = useRef(0);
-  const [revealed, setRevealed] = useState(false);
+  const isOpen = useRef(false);
 
   // Close when another row opens
   useEffect(() => {
-    if (openSetId !== setId && revealed) {
-      animateTo(0);
-      setRevealed(false);
+    if (openSetId !== setId && isOpen.current) {
+      snapBack();
     }
-  }, [openSetId, setId, revealed]);
+  }, [openSetId, setId]);
 
-  function animateTo(target, then) {
+  function setTransforms(rowX, animate) {
     const el = contentRef.current;
-    if (!el) return;
-    el.style.transition = 'transform 0.2s ease';
-    el.style.transform = `translateX(${target}px)`;
-    currentOffset.current = target;
-    if (then) setTimeout(then, 200);
-    setTimeout(() => { if (el) el.style.transition = 'none'; }, 220);
+    const icon = iconRef.current;
+    if (!el || !icon) return;
+    const transition = animate || 'none';
+    el.style.transition = transition;
+    icon.style.transition = transition;
+    el.style.transform = `translateX(${rowX}px)`;
+    // Icon starts off-screen (100%) and pulls in based on drag distance
+    const absX = Math.abs(rowX);
+    const iconTravel = absX * ICON_MULTIPLIER;
+    // Icon is positioned at right:0 inside container, starts at translateX(100%)
+    // As drag increases, it moves left: translateX(100% - iconTravel)
+    // Clamp so it doesn't overshoot past center of revealed zone
+    const iconX = Math.max(0, 72 - iconTravel);
+    icon.style.transform = `translateX(${iconX}px)`;
+    currentOffset.current = rowX;
+  }
+
+  function snapBack() {
+    setTransforms(0, SNAP_BACK);
+    isOpen.current = false;
+    setTimeout(() => {
+      const el = contentRef.current;
+      const icon = iconRef.current;
+      if (el) el.style.transition = 'none';
+      if (icon) icon.style.transition = 'none';
+    }, 260);
+  }
+
+  function flyOffAndDelete() {
+    const w = rowWidth.current || containerRef.current?.offsetWidth || 300;
+    const el = contentRef.current;
+    const icon = iconRef.current;
+    if (el) {
+      el.style.transition = FLY_OFF;
+      el.style.transform = `translateX(${-w}px)`;
+    }
+    if (icon) {
+      icon.style.transition = FLY_OFF;
+      icon.style.transform = 'translateX(0px)';
+    }
+    setTimeout(onDelete, 150);
   }
 
   function handleTouchStart(e) {
@@ -57,7 +93,9 @@ function SwipeableSetRow({ children, onDelete, setId, openSetId, setOpenSetId })
     direction.current = null;
     rowWidth.current = containerRef.current?.offsetWidth || 300;
     const el = contentRef.current;
+    const icon = iconRef.current;
     if (el) el.style.transition = 'none';
+    if (icon) icon.style.transition = 'none';
   }
 
   function handleTouchMove(e) {
@@ -88,9 +126,7 @@ function SwipeableSetRow({ children, onDelete, setId, openSetId, setOpenSetId })
       newOffset = -(resistStart + excess * 0.3);
     }
 
-    currentOffset.current = newOffset;
-    const el = contentRef.current;
-    if (el) el.style.transform = `translateX(${newOffset}px)`;
+    setTransforms(newOffset, null);
   }
 
   function handleTouchEnd() {
@@ -98,28 +134,20 @@ function SwipeableSetRow({ children, onDelete, setId, openSetId, setOpenSetId })
     const absOffset = Math.abs(currentOffset.current);
     const w = rowWidth.current;
 
-    if (absOffset > w * DELETE_THRESHOLD) {
-      animateTo(-w, onDelete);
-    } else if (absOffset > w * SNAP_THRESHOLD) {
-      animateTo(-REVEAL_WIDTH);
-      setRevealed(true);
-      setOpenSetId(setId);
+    if (absOffset > w * SNAP_THRESHOLD) {
+      // Past snap threshold — delete
+      flyOffAndDelete();
     } else {
-      animateTo(0);
-      setRevealed(false);
+      // Snap back
+      snapBack();
       if (openSetId === setId) setOpenSetId(null);
     }
   }
 
-  function handleDeleteTap() {
-    const w = rowWidth.current || containerRef.current?.offsetWidth || 300;
-    animateTo(-w, onDelete);
-  }
-
   return (
     <div className="swipe-container" ref={containerRef}>
-      <div className="swipe-delete-zone" onClick={handleDeleteTap}>
-        ✕
+      <div className="swipe-delete-zone">
+        <span className="swipe-icon" ref={iconRef}>✕</span>
       </div>
       <div
         ref={contentRef}
