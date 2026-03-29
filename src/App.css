@@ -278,10 +278,44 @@ body {
   border-right: 1px solid var(--border);
 }
 
+/* ── Swipe-to-delete container ── */
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  touch-action: pan-y;
+}
+
+.swipe-delete-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 72px;
+  background: #e53935;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+
 .set-row {
   display: grid;
   grid-template-columns: 48px 1fr 1fr;
   border-bottom: 1px solid var(--border);
+}
+
+.swipe-container .set-row {
+  border-bottom: none;
 }
 
 .set-row.logged {

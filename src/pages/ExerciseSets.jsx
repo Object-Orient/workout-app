@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../db/index';
 import {
@@ -6,10 +6,133 @@ import {
   getSetsForWorkoutExercise,
   getLastSessionSets,
   logSet,
+  deleteSet,
   removeExerciseFromWorkout,
 } from '../db/actions';
 import ConfirmDialog from '../components/ConfirmDialog';
 import NumericKeypad from '../components/NumericKeypad';
+
+const REVEAL_WIDTH = 72;
+const SNAP_THRESHOLD = 0.4;
+const DELETE_THRESHOLD = 0.75;
+const RESISTANCE_START = 0.6;
+
+function SwipeableSetRow({ children, onDelete, setId, openSetId, setOpenSetId }) {
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const startOffset = useRef(0);
+  const currentOffset = useRef(0);
+  const direction = useRef(null);
+  const rowWidth = useRef(0);
+  const [revealed, setRevealed] = useState(false);
+
+  // Close when another row opens
+  useEffect(() => {
+    if (openSetId !== setId && revealed) {
+      animateTo(0);
+      setRevealed(false);
+    }
+  }, [openSetId, setId, revealed]);
+
+  function animateTo(target, then) {
+    const el = contentRef.current;
+    if (!el) return;
+    el.style.transition = 'transform 0.2s ease';
+    el.style.transform = `translateX(${target}px)`;
+    currentOffset.current = target;
+    if (then) setTimeout(then, 200);
+    setTimeout(() => { if (el) el.style.transition = 'none'; }, 220);
+  }
+
+  function handleTouchStart(e) {
+    if (openSetId && openSetId !== setId) {
+      setOpenSetId(null);
+    }
+    const touch = e.touches[0];
+    startX.current = touch.clientX;
+    startY.current = touch.clientY;
+    startOffset.current = currentOffset.current;
+    direction.current = null;
+    rowWidth.current = containerRef.current?.offsetWidth || 300;
+    const el = contentRef.current;
+    if (el) el.style.transition = 'none';
+  }
+
+  function handleTouchMove(e) {
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX.current;
+    const dy = touch.clientY - startY.current;
+
+    if (!direction.current) {
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+        direction.current = 'h';
+      } else if (Math.abs(dy) > 5) {
+        direction.current = 'v';
+        return;
+      } else {
+        return;
+      }
+    }
+    if (direction.current === 'v') return;
+
+    let newOffset = startOffset.current + dx;
+    if (newOffset > 0) newOffset = 0;
+
+    const absOffset = Math.abs(newOffset);
+    const w = rowWidth.current;
+    const resistStart = w * RESISTANCE_START;
+    if (absOffset > resistStart) {
+      const excess = absOffset - resistStart;
+      newOffset = -(resistStart + excess * 0.3);
+    }
+
+    currentOffset.current = newOffset;
+    const el = contentRef.current;
+    if (el) el.style.transform = `translateX(${newOffset}px)`;
+  }
+
+  function handleTouchEnd() {
+    if (direction.current !== 'h') return;
+    const absOffset = Math.abs(currentOffset.current);
+    const w = rowWidth.current;
+
+    if (absOffset > w * DELETE_THRESHOLD) {
+      animateTo(-w, onDelete);
+    } else if (absOffset > w * SNAP_THRESHOLD) {
+      animateTo(-REVEAL_WIDTH);
+      setRevealed(true);
+      setOpenSetId(setId);
+    } else {
+      animateTo(0);
+      setRevealed(false);
+      if (openSetId === setId) setOpenSetId(null);
+    }
+  }
+
+  function handleDeleteTap() {
+    const w = rowWidth.current || containerRef.current?.offsetWidth || 300;
+    animateTo(-w, onDelete);
+  }
+
+  return (
+    <div className="swipe-container" ref={containerRef}>
+      <div className="swipe-delete-zone" onClick={handleDeleteTap}>
+        ✕
+      </div>
+      <div
+        ref={contentRef}
+        className="swipe-content"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function ExerciseSets() {
   const { workoutExerciseId } = useParams();
@@ -19,6 +142,7 @@ export default function ExerciseSets() {
   const [ghostSets, setGhostSets] = useState([]);
   const [showRemove, setShowRemove] = useState(false);
   const [displayUnit, setDisplayUnit] = useState('lb');
+  const [openSetId, setOpenSetId] = useState(null);
 
   // New set input values
   const [newWeight, setNewWeight] = useState('');
@@ -61,6 +185,12 @@ export default function ExerciseSets() {
     await saveSet(w, r);
   }
 
+  async function handleDeleteSet(setId) {
+    await deleteSet(setId);
+    setOpenSetId(null);
+    await loadData();
+  }
+
   async function handleRemove() {
     await removeExerciseFromWorkout(workoutExerciseId);
     navigate('/');
@@ -76,12 +206,10 @@ export default function ExerciseSets() {
 
     if (target === 'weight') {
       setNewWeight(value);
-      // Auto-advance to reps
       setKeypad({ target: 'reps', value: newReps || '', allowDecimal: false });
       return;
     } else if (target === 'reps') {
       setKeypad(null);
-      // Auto-save if both weight and reps are filled
       if (newWeight && value) {
         await saveSet(newWeight, value);
       } else {
@@ -96,7 +224,6 @@ export default function ExerciseSets() {
     setKeypad(null);
   }
 
-  // Unit conversion (display only)
   function convertWeight(weight, fromUnit) {
     const from = fromUnit || 'lb';
     if (displayUnit === from) return weight;
@@ -108,9 +235,7 @@ export default function ExerciseSets() {
     setDisplayUnit((u) => (u === 'lb' ? 'kg' : 'lb'));
   }
 
-  // Ghost data: previous session first, fall back to last logged set in current session
   const ghostCurrent = ghostSets[sets.length] || (sets.length > 0 ? sets[sets.length - 1] : null);
-  // Ghost rows to show (skip current set's ghost since it's in the input bar)
   const ghostExtras = ghostSets.slice(sets.length + 1);
   const nextSetNum = sets.length + 1;
 
@@ -126,7 +251,6 @@ export default function ExerciseSets() {
         </button>
       </div>
 
-      {/* Logged sets grid */}
       <div className="sets-container">
         <div className="set-header">
           <span>Set</span>
@@ -135,16 +259,23 @@ export default function ExerciseSets() {
         </div>
 
         {sets.map((s, i) => (
-          <div key={s.id} className="set-row logged">
-            <span className="set-num">{i + 1}</span>
-            <div className="cell cell-weight" onClick={toggleUnit}>
-              {convertWeight(s.weight, s.weight_unit)} <span className="unit-label">{displayUnit}</span>
+          <SwipeableSetRow
+            key={s.id}
+            setId={s.id}
+            onDelete={() => handleDeleteSet(s.id)}
+            openSetId={openSetId}
+            setOpenSetId={setOpenSetId}
+          >
+            <div className="set-row logged">
+              <span className="set-num">{i + 1}</span>
+              <div className="cell cell-weight" onClick={toggleUnit}>
+                {convertWeight(s.weight, s.weight_unit)} <span className="unit-label">{displayUnit}</span>
+              </div>
+              <div className="cell">{s.reps}</div>
             </div>
-            <div className="cell">{s.reps}</div>
-          </div>
+          </SwipeableSetRow>
         ))}
 
-        {/* Ghost rows from last session */}
         {ghostExtras.map((g, i) => (
           <div key={`ghost-${i}`} className="set-row" style={{ opacity: 0.25 }}>
             <span className="set-num">{sets.length + i + 2}</span>
@@ -162,7 +293,6 @@ export default function ExerciseSets() {
         )}
       </div>
 
-      {/* Bottom input row — tap to open keypad */}
       <div className="input-row">
         <div className="set-indicator">Set {nextSetNum}</div>
         <div
