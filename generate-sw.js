@@ -27,12 +27,11 @@ const CACHE_NAME = '${cacheVersion}';
 
 const PRECACHE_URLS = ${JSON.stringify(files, null, 2)};
 
-// Do NOT call skipWaiting automatically — let the client control activation
-// so the user sees the "Update available" prompt before the page reloads.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -42,13 +41,6 @@ self.addEventListener('activate', (event) => {
     )
   );
   self.clients.claim();
-});
-
-// Listen for skip-waiting message from the client
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
 
 self.addEventListener('fetch', (event) => {
