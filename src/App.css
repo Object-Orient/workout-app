@@ -295,6 +295,8 @@ body {
   padding: 12px 8px;
   font-variant-numeric: tabular-nums;
   font-family: inherit;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .set-row input::placeholder {
@@ -331,6 +333,8 @@ body {
   font-variant-numeric: tabular-nums;
   font-family: inherit;
   min-width: 0;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .input-row input::placeholder {

@@ -78,6 +78,12 @@ export default function ExerciseSets() {
     if (e.key === 'Enter') handleLog();
   }
 
+  // Explicit focus trigger for Android standalone PWA keyboard
+  function handleInputTap(e) {
+    e.target.focus();
+    e.target.click();
+  }
+
   // Ghost rows to show (only those beyond current sets)
   const ghostExtras = ghostSets.slice(sets.length);
 
@@ -125,6 +131,7 @@ export default function ExerciseSets() {
                     }
                     onBlur={() => handleEditSave(s.id)}
                     onClick={(e) => e.stopPropagation()}
+                    onFocus={handleInputTap}
                     autoFocus
                   />
                 </div>
@@ -139,6 +146,7 @@ export default function ExerciseSets() {
                     }
                     onBlur={() => handleEditSave(s.id)}
                     onClick={(e) => e.stopPropagation()}
+                    onFocus={handleInputTap}
                   />
                 </div>
               </>
@@ -180,6 +188,7 @@ export default function ExerciseSets() {
           pattern="[0-9]*\.?[0-9]*"
           placeholder="Weight (lb)"
           onKeyDown={handleKeyDown}
+          onFocus={handleInputTap}
         />
         <input
           ref={repsRef}
@@ -188,6 +197,7 @@ export default function ExerciseSets() {
           pattern="[0-9]*"
           placeholder="Reps"
           onKeyDown={handleKeyDown}
+          onFocus={handleInputTap}
         />
         <button className="log-btn" onClick={handleLog}>
           +
