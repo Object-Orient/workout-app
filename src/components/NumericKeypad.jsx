@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function NumericKeypad({ value, onChange, onDone, onCancel, allowDecimal = true }) {
+export default function NumericKeypad({ value, onChange, onDone, onCancel, allowDecimal = true, label = '' }) {
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function NumericKeypad({ value, onChange, onDone, onCancel, allow
     <div className="keypad-overlay" ref={overlayRef} onClick={handleOverlayClick}>
       <div className="keypad">
         <div className="keypad-display">
+          {label && <span className="keypad-label">{label}</span>}
           <span className="keypad-value">{value || '0'}</span>
         </div>
         <div className="keypad-grid">

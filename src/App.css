@@ -362,6 +362,10 @@ body {
   text-transform: uppercase;
 }
 
+.input-row .input-cell.active {
+  background: var(--gray-2);
+}
+
 .input-row .input-cell:active {
   background: var(--gray-2);
 }
@@ -608,9 +612,19 @@ body {
 }
 
 .keypad-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px;
-  text-align: right;
   border-bottom: 1px solid var(--border);
+}
+
+.keypad-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .keypad-value {

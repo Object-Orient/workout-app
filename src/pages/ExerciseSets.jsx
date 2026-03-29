@@ -79,6 +79,9 @@ export default function ExerciseSets() {
 
     if (target === 'weight') {
       setNewWeight(value);
+      // Auto-advance to reps
+      setKeypad({ target: 'reps', value: newReps || '', allowDecimal: false });
+      return;
     } else if (target === 'reps') {
       setNewReps(value);
     } else if (target === 'edit-weight' && editingSet) {
@@ -174,13 +177,13 @@ export default function ExerciseSets() {
       {/* Bottom input row — tap to open keypad */}
       <div className="input-row">
         <div
-          className={`input-cell${newWeight ? '' : ' placeholder'}`}
+          className={`input-cell${newWeight ? '' : ' placeholder'}${keypad?.target === 'weight' ? ' active' : ''}`}
           onClick={() => openKeypad('weight', newWeight, true)}
         >
           {newWeight || 'WEIGHT (LB)'}
         </div>
         <div
-          className={`input-cell${newReps ? '' : ' placeholder'}`}
+          className={`input-cell${newReps ? '' : ' placeholder'}${keypad?.target === 'reps' ? ' active' : ''}`}
           onClick={() => openKeypad('reps', newReps, false)}
         >
           {newReps || 'REPS'}
@@ -202,6 +205,7 @@ export default function ExerciseSets() {
         <NumericKeypad
           value={keypad.value}
           allowDecimal={keypad.allowDecimal}
+          label={keypad.target === 'weight' || keypad.target === 'edit-weight' ? 'Weight' : 'Reps'}
           onChange={(v) => setKeypad((p) => ({ ...p, value: v }))}
           onDone={handleKeypadDone}
           onCancel={handleKeypadCancel}
