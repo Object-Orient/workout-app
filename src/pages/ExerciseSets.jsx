@@ -106,7 +106,7 @@ export default function ExerciseSets() {
               <>
                 <div className="cell">
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     value={editingSet.weight}
@@ -120,7 +120,7 @@ export default function ExerciseSets() {
                 </div>
                 <div className="cell">
                   <input
-                    type="number"
+                    type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={editingSet.reps}
@@ -165,7 +165,7 @@ export default function ExerciseSets() {
       <div className="input-row">
         <input
           ref={weightRef}
-          type="number"
+          type="text"
           inputMode="decimal"
           pattern="[0-9]*\.?[0-9]*"
           placeholder="Weight (lb)"
@@ -173,7 +173,7 @@ export default function ExerciseSets() {
         />
         <input
           ref={repsRef}
-          type="number"
+          type="text"
           inputMode="numeric"
           pattern="[0-9]*"
           placeholder="Reps"
