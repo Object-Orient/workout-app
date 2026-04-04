@@ -30,7 +30,11 @@ export default function SyncStatus() {
     subs.push(
       db.cloud.syncState.subscribe((s) => {
         setSyncState(s);
-        log(`sync: ${s?.phase} / ${s?.status} / ${s?.license}${s?.error ? ' ERR:' + s.error : ''}`);
+        const errStr = s?.error ? ` ERR:${s.error.message || s.error}` : '';
+        log(`sync: ${s?.phase} / ${s?.status} / ${s?.license}${errStr}`);
+        if (s?.error) {
+          console.error('[SyncStatus] Sync Error:', s.error);
+        }
       })
     );
     subs.push(
