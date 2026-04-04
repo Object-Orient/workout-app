@@ -54,7 +54,7 @@ export default function SyncStatus() {
     if (phase === 'error') return 'Sync error';
     if (phase === 'offline') return 'Offline';
     if (phase === 'not-in-sync' || phase === 'initial') return 'Connecting…';
-    return 'Connecting…';
+    return `Connecting… (${phase})`;
   }
 
   function handleLogin() {
@@ -130,6 +130,11 @@ export default function SyncStatus() {
         <div className="sync-panel-status">{statusLabel()}</div>
         {isLoggedIn && user.email && (
           <div className="sync-panel-email">{user.email}</div>
+        )}
+        {syncState && (
+          <div className="sync-panel-alert">
+            phase: {syncState.phase} | status: {syncState.status} | license: {syncState.license}
+          </div>
         )}
         {isLoggedIn ? (
           <button className="sync-panel-btn" onClick={handleLogout}>
