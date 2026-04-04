@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../db';
 
 export default function SyncStatus() {
   const [user, setUser] = useState(null);
   const [syncState, setSyncState] = useState(null);
   const [open, setOpen] = useState(false);
+  const [interaction, setInteraction] = useState(null);
+  const [inputVal, setInputVal] = useState('');
+  const inputRef = useRef(null);
 
   const cloudReady = !!db.cloud;
 
@@ -14,9 +17,22 @@ export default function SyncStatus() {
     const subs = [];
     subs.push(db.cloud.currentUser.subscribe((u) => setUser(u)));
     subs.push(db.cloud.syncState.subscribe((s) => setSyncState(s)));
+    subs.push(
+      db.cloud.userInteraction.subscribe((ia) => {
+        setInteraction(ia);
+        setInputVal('');
+        if (ia) setOpen(true);
+      })
+    );
 
     return () => subs.forEach((s) => s.unsubscribe());
   }, [cloudReady]);
+
+  useEffect(() => {
+    if (interaction && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [interaction]);
 
   if (!cloudReady) return null;
 
@@ -37,23 +53,95 @@ export default function SyncStatus() {
     if (phase === 'in-sync') return 'Synced';
     if (phase === 'error') return 'Sync error';
     if (phase === 'offline') return 'Offline';
+    if (phase === 'not-in-sync' || phase === 'initial') return 'Connecting…';
     return 'Connecting…';
   }
 
-  async function handleLogin() {
-    try {
-      await db.cloud.login();
-    } catch (err) {
-      console.error('Login failed:', err);
-    }
+  function handleLogin() {
+    db.cloud.login();
   }
 
-  async function handleLogout() {
-    try {
-      await db.cloud.logout();
-    } catch (err) {
-      console.error('Logout failed:', err);
+  function handleLogout() {
+    db.cloud.logout();
+    setOpen(false);
+  }
+
+  function handleInteractionSubmit(e) {
+    e.preventDefault();
+    if (!interaction) return;
+
+    const fields = {};
+    const fieldKeys = Object.keys(interaction.fields || {});
+    if (fieldKeys.length > 0) {
+      fields[fieldKeys[0]] = inputVal;
     }
+    interaction.onSubmit(fields);
+    setInteraction(null);
+    setInputVal('');
+  }
+
+  function handleInteractionCancel() {
+    if (interaction) interaction.onCancel();
+    setInteraction(null);
+    setInputVal('');
+  }
+
+  // Determine what to show in the panel
+  function renderPanelContent() {
+    // Active login interaction (email or OTP prompt)
+    if (interaction) {
+      const fieldKeys = Object.keys(interaction.fields || {});
+      const field = fieldKeys.length > 0 ? interaction.fields[fieldKeys[0]] : null;
+
+      return (
+        <>
+          <div className="sync-panel-status">{interaction.title || 'Sign in'}</div>
+          {interaction.alerts?.map((a, i) => (
+            <div key={i} className="sync-panel-alert">{a.message}</div>
+          ))}
+          <form onSubmit={handleInteractionSubmit} className="sync-panel-form">
+            {field && (
+              <input
+                ref={inputRef}
+                className="sync-panel-input"
+                type={field.type || 'text'}
+                placeholder={field.placeholder || ''}
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                autoComplete={field.type === 'email' ? 'email' : 'off'}
+              />
+            )}
+            <div className="sync-panel-actions">
+              <button type="submit" className="sync-panel-btn">
+                {interaction.submitLabel || 'Submit'}
+              </button>
+              <button type="button" className="sync-panel-btn sync-panel-btn-cancel" onClick={handleInteractionCancel}>
+                {interaction.cancelLabel || 'Cancel'}
+              </button>
+            </div>
+          </form>
+        </>
+      );
+    }
+
+    // Normal status view
+    return (
+      <>
+        <div className="sync-panel-status">{statusLabel()}</div>
+        {isLoggedIn && user.email && (
+          <div className="sync-panel-email">{user.email}</div>
+        )}
+        {isLoggedIn ? (
+          <button className="sync-panel-btn" onClick={handleLogout}>
+            Log out
+          </button>
+        ) : (
+          <button className="sync-panel-btn" onClick={handleLogin}>
+            Sign in to sync
+          </button>
+        )}
+      </>
+    );
   }
 
   return (
@@ -70,23 +158,11 @@ export default function SyncStatus() {
 
       {open && (
         <div className="sync-panel">
-          <div className="sync-panel-status">{statusLabel()}</div>
-          {isLoggedIn && user.email && (
-            <div className="sync-panel-email">{user.email}</div>
-          )}
-          {isLoggedIn ? (
-            <button className="sync-panel-btn" onClick={handleLogout}>
-              Log out
-            </button>
-          ) : (
-            <button className="sync-panel-btn" onClick={handleLogin}>
-              Sign in to sync
-            </button>
-          )}
+          {renderPanelContent()}
         </div>
       )}
 
-      {open && <div className="sync-overlay" onClick={() => setOpen(false)} />}
+      {open && !interaction && <div className="sync-overlay" onClick={() => setOpen(false)} />}
     </>
   );
 }

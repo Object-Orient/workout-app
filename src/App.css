@@ -817,6 +817,46 @@ body {
   color: var(--black);
 }
 
+.sync-panel-btn-cancel {
+  border-color: var(--gray-4);
+  color: var(--gray-5);
+}
+
+.sync-panel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-panel-input {
+  background: var(--black);
+  border: 1px solid var(--border);
+  color: var(--white);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.sync-panel-input:focus {
+  outline: none;
+  border-color: var(--white);
+}
+
+.sync-panel-input::placeholder {
+  color: var(--gray-4);
+}
+
+.sync-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sync-panel-alert {
+  font-size: 11px;
+  color: var(--gray-5);
+}
+
 .sync-overlay {
   position: fixed;
   inset: 0;

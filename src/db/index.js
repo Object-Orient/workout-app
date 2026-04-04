@@ -23,6 +23,7 @@ if (cloudUrl) {
   db.cloud.configure({
     databaseUrl: cloudUrl,
     requireAuth: false,
+    customLoginGui: true,
     nameSuffix: false,
     tryUseServiceWorker: true,
     unsyncedTables: ['exercises'],
