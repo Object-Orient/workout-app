@@ -857,6 +857,19 @@ body {
   color: var(--gray-5);
 }
 
+.sync-debug {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--black);
+  border: 1px solid var(--border);
+  font-size: 9px;
+  font-family: monospace;
+  color: var(--gray-5);
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.4;
+}
+
 .sync-overlay {
   position: fixed;
   inset: 0;

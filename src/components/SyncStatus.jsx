@@ -7,26 +7,70 @@ export default function SyncStatus() {
   const [open, setOpen] = useState(false);
   const [interaction, setInteraction] = useState(null);
   const [inputVal, setInputVal] = useState('');
+  const [debugLog, setDebugLog] = useState([]);
   const inputRef = useRef(null);
+  const retryRef = useRef(0);
 
   const cloudReady = !!db.cloud;
+
+  function log(msg) {
+    setDebugLog((prev) => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${msg}`]);
+  }
 
   useEffect(() => {
     if (!cloudReady) return;
 
     const subs = [];
-    subs.push(db.cloud.currentUser.subscribe((u) => setUser(u)));
-    subs.push(db.cloud.syncState.subscribe((s) => setSyncState(s)));
+    subs.push(
+      db.cloud.currentUser.subscribe((u) => {
+        setUser(u);
+        log(`user: ${u?.userId === 'unauthorized' ? 'anon' : u?.email || u?.userId}`);
+      })
+    );
+    subs.push(
+      db.cloud.syncState.subscribe((s) => {
+        setSyncState(s);
+        log(`sync: ${s?.phase} / ${s?.status} / ${s?.license}${s?.error ? ' ERR:' + s.error : ''}`);
+      })
+    );
     subs.push(
       db.cloud.userInteraction.subscribe((ia) => {
         setInteraction(ia);
         setInputVal('');
-        if (ia) setOpen(true);
+        if (ia) {
+          log(`interaction: ${ia.type || 'unknown'} - ${ia.title || ''}`);
+          setOpen(true);
+        }
       })
     );
 
     return () => subs.forEach((s) => s.unsubscribe());
   }, [cloudReady]);
+
+  // Auto-retry: if logged in but stuck on 'initial', force sync
+  useEffect(() => {
+    if (!cloudReady) return;
+    const isLoggedIn = user && user.userId !== 'unauthorized';
+    const phase = syncState?.phase;
+    const status = syncState?.status;
+
+    if (isLoggedIn && phase === 'initial' && status === 'connected' && retryRef.current < 3) {
+      const timer = setTimeout(() => {
+        retryRef.current++;
+        log(`auto-retry #${retryRef.current}: forcing sync...`);
+        try {
+          db.cloud.sync({ purpose: 'pull' }).then(() => {
+            log('sync() resolved');
+          }).catch((err) => {
+            log(`sync() error: ${err?.message || err}`);
+          });
+        } catch (err) {
+          log(`sync() threw: ${err?.message || err}`);
+        }
+      }, 2000 * retryRef.current + 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cloudReady, user, syncState]);
 
   useEffect(() => {
     if (interaction && inputRef.current) {
@@ -51,19 +95,34 @@ export default function SyncStatus() {
     if (!isLoggedIn) return 'Not signed in';
     if (phase === 'pushing' || phase === 'pulling') return 'Syncing…';
     if (phase === 'in-sync') return 'Synced';
-    if (phase === 'error') return 'Sync error';
+    if (phase === 'error') return `Sync error`;
     if (phase === 'offline') return 'Offline';
-    if (phase === 'not-in-sync' || phase === 'initial') return 'Connecting…';
     return `Connecting… (${phase})`;
   }
 
   function handleLogin() {
+    log('login() called');
     db.cloud.login();
   }
 
   function handleLogout() {
+    log('logout() called');
     db.cloud.logout();
+    retryRef.current = 0;
     setOpen(false);
+  }
+
+  function handleForceSync() {
+    log('manual force sync...');
+    try {
+      db.cloud.sync({ purpose: 'push' }).then(() => {
+        log('force sync resolved');
+      }).catch((err) => {
+        log(`force sync error: ${err?.message || err}`);
+      });
+    } catch (err) {
+      log(`force sync threw: ${err?.message || err}`);
+    }
   }
 
   function handleInteractionSubmit(e) {
@@ -75,20 +134,20 @@ export default function SyncStatus() {
     if (fieldKeys.length > 0) {
       fields[fieldKeys[0]] = inputVal;
     }
+    log(`submit interaction: ${JSON.stringify(fields)}`);
     interaction.onSubmit(fields);
     setInteraction(null);
     setInputVal('');
   }
 
   function handleInteractionCancel() {
+    log('cancel interaction');
     if (interaction) interaction.onCancel();
     setInteraction(null);
     setInputVal('');
   }
 
-  // Determine what to show in the panel
   function renderPanelContent() {
-    // Active login interaction (email or OTP prompt)
     if (interaction) {
       const fieldKeys = Object.keys(interaction.fields || {});
       const field = fieldKeys.length > 0 ? interaction.fields[fieldKeys[0]] : null;
@@ -124,21 +183,14 @@ export default function SyncStatus() {
       );
     }
 
-    // Normal status view
     return (
       <>
         <div className="sync-panel-status">{statusLabel()}</div>
         {isLoggedIn && user.email && (
           <div className="sync-panel-email">{user.email}</div>
         )}
-        {syncState && (
-          <div className="sync-panel-alert">
-            phase: {syncState.phase} | status: {syncState.status} | license: {syncState.license}
-            {syncState.error && ` | err: ${syncState.error}`}
-          </div>
-        )}
         {isLoggedIn && (
-          <button className="sync-panel-btn" onClick={() => { db.cloud.sync(); }}>
+          <button className="sync-panel-btn" onClick={handleForceSync}>
             Force sync
           </button>
         )}
@@ -150,6 +202,11 @@ export default function SyncStatus() {
           <button className="sync-panel-btn" onClick={handleLogin}>
             Sign in to sync
           </button>
+        )}
+        {debugLog.length > 0 && (
+          <div className="sync-debug">
+            {debugLog.map((l, i) => <div key={i}>{l}</div>)}
+          </div>
         )}
       </>
     );
