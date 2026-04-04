@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import SyncStatus from '../components/SyncStatus';
 import {
   startWorkout,
   getWorkout,
@@ -89,6 +90,7 @@ export default function TodayWorkout() {
       <div className="page">
         <div className="top-bar">
           <h1>Workout</h1>
+          <SyncStatus />
         </div>
         <div className="page-scroll has-nav">
           <div className="empty-state">
@@ -116,6 +118,7 @@ export default function TodayWorkout() {
           onChange={handleNameChange}
           placeholder="Today's Workout"
         />
+        <SyncStatus />
         <button onClick={handleFinishWorkout}>Finish</button>
       </div>
 

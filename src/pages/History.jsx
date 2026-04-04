@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SyncStatus from '../components/SyncStatus';
 import { getAllWorkouts, getWorkoutExercises } from '../db/actions';
 
 export default function History() {
@@ -32,6 +33,7 @@ export default function History() {
     <div className="page">
       <div className="top-bar">
         <h1>History</h1>
+        <SyncStatus />
       </div>
 
       <div className="page-scroll has-nav">

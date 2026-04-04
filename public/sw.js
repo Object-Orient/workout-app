@@ -1,3 +1,10 @@
+// Dexie Cloud background sync support
+try {
+  importScripts('https://unpkg.com/dexie-cloud-addon/dist/umd/service-worker.min.js');
+} catch (e) {
+  // Cloud sync will still work without the service worker addon
+}
+
 const CACHE_NAME = 'workout-dev';
 
 self.addEventListener('install', (event) => {

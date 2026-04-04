@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 .env.*
+dexie-cloud.json
+dexie-cloud.key

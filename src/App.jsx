@@ -4,6 +4,7 @@ import ExerciseSelect from './pages/ExerciseSelect';
 import ExerciseSets from './pages/ExerciseSets';
 import History from './pages/History';
 import WorkoutDetail from './pages/WorkoutDetail';
+import SyncStatus from './components/SyncStatus';
 import './App.css';
 
 function NavBar() {
@@ -20,7 +21,7 @@ function NavBar() {
       <Link to="/history" className={location.pathname.startsWith('/history') ? 'active' : ''}>
         History
       </Link>
-      <span style={{ position: 'absolute', bottom: 2, right: 6, fontSize: 9, color: '#333', pointerEvents: 'none' }}>v1.1.3</span>
+      <span style={{ position: 'absolute', bottom: 2, right: 6, fontSize: 9, color: '#333', pointerEvents: 'none' }}>v1.2.0</span>
     </nav>
   );
 }
