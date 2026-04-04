@@ -134,7 +134,13 @@ export default function SyncStatus() {
         {syncState && (
           <div className="sync-panel-alert">
             phase: {syncState.phase} | status: {syncState.status} | license: {syncState.license}
+            {syncState.error && ` | err: ${syncState.error}`}
           </div>
+        )}
+        {isLoggedIn && (
+          <button className="sync-panel-btn" onClick={() => { db.cloud.sync(); }}>
+            Force sync
+          </button>
         )}
         {isLoggedIn ? (
           <button className="sync-panel-btn" onClick={handleLogout}>
