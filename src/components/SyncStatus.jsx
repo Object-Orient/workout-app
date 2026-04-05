@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import Dexie from 'dexie';
 import { db } from '../db';
 
 export default function SyncStatus() {
@@ -8,74 +7,30 @@ export default function SyncStatus() {
   const [open, setOpen] = useState(false);
   const [interaction, setInteraction] = useState(null);
   const [inputVal, setInputVal] = useState('');
-  const [debugLog, setDebugLog] = useState([]);
   const inputRef = useRef(null);
-  const retryRef = useRef(0);
 
   const cloudReady = !!db.cloud;
-
-  function log(msg) {
-    setDebugLog((prev) => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${msg}`]);
-  }
 
   useEffect(() => {
     if (!cloudReady) return;
 
     const subs = [];
     subs.push(
-      db.cloud.currentUser.subscribe((u) => {
-        setUser(u);
-        log(`user: ${u?.userId === 'unauthorized' ? 'anon' : u?.email || u?.userId}`);
-      })
+      db.cloud.currentUser.subscribe((u) => setUser(u))
     );
     subs.push(
-      db.cloud.syncState.subscribe((s) => {
-        setSyncState(s);
-        const errStr = s?.error ? ` ERR:${s.error.message || s.error}` : '';
-        log(`sync: ${s?.phase} / ${s?.status} / ${s?.license}${errStr}`);
-        if (s?.error) {
-          console.error('[SyncStatus] Sync Error:', s.error);
-        }
-      })
+      db.cloud.syncState.subscribe((s) => setSyncState(s))
     );
     subs.push(
       db.cloud.userInteraction.subscribe((ia) => {
         setInteraction(ia);
         setInputVal('');
-        if (ia) {
-          log(`interaction: ${ia.type || 'unknown'} - ${ia.title || ''}`);
-          setOpen(true);
-        }
+        if (ia) setOpen(true);
       })
     );
 
     return () => subs.forEach((s) => s.unsubscribe());
   }, [cloudReady]);
-
-  // Auto-retry: if logged in but stuck on 'initial', force sync
-  useEffect(() => {
-    if (!cloudReady) return;
-    const isLoggedIn = user && user.userId !== 'unauthorized';
-    const phase = syncState?.phase;
-    const status = syncState?.status;
-
-    if (isLoggedIn && phase === 'initial' && status === 'connected' && retryRef.current < 3) {
-      const timer = setTimeout(() => {
-        retryRef.current++;
-        log(`auto-retry #${retryRef.current}: forcing sync...`);
-        try {
-          db.cloud.sync({ purpose: 'pull' }).then(() => {
-            log('sync() resolved');
-          }).catch((err) => {
-            log(`sync() error: ${err?.message || err}`);
-          });
-        } catch (err) {
-          log(`sync() threw: ${err?.message || err}`);
-        }
-      }, 2000 * retryRef.current + 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [cloudReady, user, syncState]);
 
   useEffect(() => {
     if (interaction && inputRef.current) {
@@ -100,34 +55,9 @@ export default function SyncStatus() {
     if (!isLoggedIn) return 'Not signed in';
     if (phase === 'pushing' || phase === 'pulling') return 'Syncing…';
     if (phase === 'in-sync') return 'Synced';
-    if (phase === 'error') return `Sync error`;
+    if (phase === 'error') return 'Sync error';
     if (phase === 'offline') return 'Offline';
-    return `Connecting… (${phase})`;
-  }
-
-  function handleLogin() {
-    log('login() called');
-    db.cloud.login();
-  }
-
-  function handleLogout() {
-    log('logout() called');
-    db.cloud.logout();
-    retryRef.current = 0;
-    setOpen(false);
-  }
-
-  function handleForceSync() {
-    log('manual force sync...');
-    try {
-      db.cloud.sync({ purpose: 'push' }).then(() => {
-        log('force sync resolved');
-      }).catch((err) => {
-        log(`force sync error: ${err?.message || err}`);
-      });
-    } catch (err) {
-      log(`force sync threw: ${err?.message || err}`);
-    }
+    return 'Connecting…';
   }
 
   function handleInteractionSubmit(e) {
@@ -139,14 +69,12 @@ export default function SyncStatus() {
     if (fieldKeys.length > 0) {
       fields[fieldKeys[0]] = inputVal;
     }
-    log(`submit interaction: ${JSON.stringify(fields)}`);
     interaction.onSubmit(fields);
     setInteraction(null);
     setInputVal('');
   }
 
   function handleInteractionCancel() {
-    log('cancel interaction');
     if (interaction) interaction.onCancel();
     setInteraction(null);
     setInputVal('');
@@ -194,66 +122,14 @@ export default function SyncStatus() {
         {isLoggedIn && user.email && (
           <div className="sync-panel-email">{user.email}</div>
         )}
-        {isLoggedIn && (
-          <button className="sync-panel-btn" onClick={handleForceSync}>
-            Force sync
-          </button>
-        )}
         {isLoggedIn ? (
-          <button className="sync-panel-btn" onClick={handleLogout}>
+          <button className="sync-panel-btn" onClick={() => { db.cloud.logout(); setOpen(false); }}>
             Log out
           </button>
         ) : (
-          <button className="sync-panel-btn" onClick={handleLogin}>
+          <button className="sync-panel-btn" onClick={() => db.cloud.login()}>
             Sign in to sync
           </button>
-        )}
-        <button className="sync-panel-btn" onClick={async () => {
-          try {
-            const dbs = await indexedDB.databases();
-            const dbNames = dbs.map(d => d.name);
-            const cloudW = await db.workouts.count();
-            const cloudS = await db.sets.count();
-            const cloudWE = await db.workout_exercises.count();
-            const migrated = localStorage.getItem('db-migrated');
-
-            let oldInfo = 'N/A';
-            try {
-              const oldDb = new Dexie('WorkoutTracker');
-              oldDb.version(1).stores({
-                exercises: 'id, name, muscle_group, movement_pattern, equipment',
-                workouts: 'id, started_at, completed_at',
-                workout_exercises: 'id, workout_id, exercise_id, position',
-                sets: 'id, workout_exercise_id, set_number, completed_at',
-              });
-              const exists = await Dexie.exists('WorkoutTracker');
-              if (exists) {
-                await oldDb.open();
-                const ow = await oldDb.workouts.count();
-                const os = await oldDb.sets.count();
-                oldDb.close();
-                oldInfo = `workouts:${ow} sets:${os}`;
-              } else {
-                oldInfo = 'DB does not exist';
-              }
-            } catch (e) {
-              oldInfo = `Error: ${e.message}`;
-            }
-
-            log(`[DIAG] DBs: ${dbNames.join(', ')}`);
-            log(`[DIAG] CloudDB: w:${cloudW} s:${cloudS} we:${cloudWE}`);
-            log(`[DIAG] OldDB: ${oldInfo}`);
-            log(`[DIAG] migrated: ${migrated}`);
-          } catch (e) {
-            log(`[DIAG] Error: ${e.message}`);
-          }
-        }}>
-          Run Diagnostics
-        </button>
-        {debugLog.length > 0 && (
-          <div className="sync-debug">
-            {debugLog.map((l, i) => <div key={i}>{l}</div>)}
-          </div>
         )}
       </>
     );
