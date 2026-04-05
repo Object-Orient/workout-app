@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Dexie from 'dexie';
 import { db } from '../db';
 
 export default function SyncStatus() {
@@ -207,6 +208,48 @@ export default function SyncStatus() {
             Sign in to sync
           </button>
         )}
+        <button className="sync-panel-btn" onClick={async () => {
+          try {
+            const dbs = await indexedDB.databases();
+            const dbNames = dbs.map(d => d.name);
+            const cloudW = await db.workouts.count();
+            const cloudS = await db.sets.count();
+            const cloudWE = await db.workout_exercises.count();
+            const migrated = localStorage.getItem('db-migrated');
+
+            let oldInfo = 'N/A';
+            try {
+              const oldDb = new Dexie('WorkoutTracker');
+              oldDb.version(1).stores({
+                exercises: 'id, name, muscle_group, movement_pattern, equipment',
+                workouts: 'id, started_at, completed_at',
+                workout_exercises: 'id, workout_id, exercise_id, position',
+                sets: 'id, workout_exercise_id, set_number, completed_at',
+              });
+              const exists = await Dexie.exists('WorkoutTracker');
+              if (exists) {
+                await oldDb.open();
+                const ow = await oldDb.workouts.count();
+                const os = await oldDb.sets.count();
+                oldDb.close();
+                oldInfo = `workouts:${ow} sets:${os}`;
+              } else {
+                oldInfo = 'DB does not exist';
+              }
+            } catch (e) {
+              oldInfo = `Error: ${e.message}`;
+            }
+
+            log(`[DIAG] DBs: ${dbNames.join(', ')}`);
+            log(`[DIAG] CloudDB: w:${cloudW} s:${cloudS} we:${cloudWE}`);
+            log(`[DIAG] OldDB: ${oldInfo}`);
+            log(`[DIAG] migrated: ${migrated}`);
+          } catch (e) {
+            log(`[DIAG] Error: ${e.message}`);
+          }
+        }}>
+          Run Diagnostics
+        </button>
         {debugLog.length > 0 && (
           <div className="sync-debug">
             {debugLog.map((l, i) => <div key={i}>{l}</div>)}
